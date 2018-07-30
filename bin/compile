@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -e
+
+build=$1
+cache=$2
+
+mkdir -p $build
+mkdir -p $cache
+
+cd $cache
+
+# remove unused directories
+# this causes an error and a quit on Dokku
+# rm -rf $cache
+# rm -rf $build/libpostal
+
+indent() {
+  sed -u 's/^/       /'
+}
+
+echo "-----> Found a .vendor_urls file"
+
+# Bail early but noisily
+if [ ! -s $1/.vendor_urls ]; then
+  echo ".vendor_urls empty. Skipping." | indent
+  exit 0
+fi
+
+mkdir $build/libpostal
+cd $build/libpostal
+
+# TODO: Use this to download and install either the libpostal-herokuish.tar.gz 
+# or create a tarball of the data files that can be downloaded from s3 after making libpostal 
+# from source. This would allow us to store the buildpack itself on github without hitting 
+# the file size limit.
+while read url; do
+  echo Vendoring $url | indent
+  curl -s $url | tar xz
+done < .vendor_urls
+
+tar -xzvf ../../libpostal-herokuish.tar.gz
+cd ../..
+cp -r $build/libpostal $cache/libpostal
+
+# echo "-----> Building links"
+# ln -vs /app/libpostal/include/libpostal/* /app/vendor/ruby-2.1.5/include/
+# ln -vs /app/libpostal/lib/* /app/vendor/ruby-2.1.5/lib/
