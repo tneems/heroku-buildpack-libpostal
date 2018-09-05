@@ -8,41 +8,34 @@ cache=$2
 mkdir -p $build
 mkdir -p $cache
 
-indent() {
-  sed -u 's/^/       /'
-}
+cd $cache
 
-echo "-----> Found a .vendor_urls file"
+echo "-----> Downloading libpostal"
 
-# Bail early but noisily
-if [ ! -s $1/.vendor_urls ]; then
-  echo ".vendor_urls empty. Skipping." | indent
-  exit 0
-fi
+git clone https://github.com/openvenues/libpostal --depth 1
+cd libpostal/
+./bootstrap.sh
+LDFLAGS="-L$build/libpostal/lib" CFLAGS="-I$build/libpostal/include" PKG_CONFIG_PATH="$build/libpostal/lib/pkgconfig"
+./configure  --enable-fast-install --disable-data-download --prefix=/app/libpostal --datadir=/app/libpostal/data
 
-mkdir $build/libpostal
-cd $build/libpostal
+make
+make install
 
-# TODO: Make libpostal without downloading data files
+# remove unused directories
+rm -rf $cache
 
-# TODO: Use this to download and install either the libpostal-herokuish.tar.gz 
-# or create a tarball of the data files that can be downloaded from s3 after making libpostal 
-# from source. This would allow us to store the buildpack itself on github without hitting 
-# the file size limit.
-while read url; do
-  echo Vendoring $url | indent
-  curl -s $url | tar xz
-done < .vendor_urls
+mkdir -p $build/libpostal/data/compressed_data
 
-# TODO: Put the data files in the correct location in the libpostal build directory
-# tar -xzvf ../../libpostal-herokuish.tar.gz
-# cd ../..
+mv /app/libpostal/* $build/libpostal
 
+echo "-----> Downloading libpostal compressed data files and storing them internally"
 
-# TODO: Test using the cache directory: https://devcenter.heroku.com/articles/buildpack-api#caching
-# cp -r $build/libpostal $cache/libpostal
+curl -L --silent "https://s3.amazonaws.com/heroku-libpostal/libpostal.tar.gz" --output "$build/libpostal/data/compressed_data/libpostal.tar.gz"
 
-# TODO: Update these links for the MOD structure
-# echo "-----> Building links"
-# ln -vs /app/libpostal/include/libpostal/* /app/vendor/ruby-2.1.5/include/
-# ln -vs /app/libpostal/lib/* /app/vendor/ruby-2.1.5/lib/
+echo "-----> Building libpostal symbolic links"
+
+mkdir -p $build/vendor/ruby-2.3.3/include
+mkdir -p $build/vendor/ruby-2.3.3/lib
+
+ln -vs $build/libpostal/include/* $build/vendor/ruby-2.3.3/include/
+ln -vs $build/libpostal/lib/* $build/vendor/ruby-2.3.3/lib/

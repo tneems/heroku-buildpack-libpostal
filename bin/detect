@@ -1,8 +1,5 @@
-#!/bin/bash
+#!/bin/sh
 
-if [ -f $1/.vendor_urls ]; then
-    echo "Vendor Urls Buildpack"
-    exit 0
-else
-    exit 1
-fi
+# this pack is valid for all apps
+echo "Libpostal Buildpack"
+exit 0

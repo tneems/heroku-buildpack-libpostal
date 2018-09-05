@@ -1,1 +1,7 @@
 *.tar.gz
+
+# Ignore sublime project files
+*.sublime-project
+*.sublime-workspace
+
+.DS_Store
