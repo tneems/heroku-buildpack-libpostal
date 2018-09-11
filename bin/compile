@@ -4,11 +4,30 @@ set -e
 
 build=$1
 cache=$2
+env_dir=$3
 
 mkdir -p $build
 mkdir -p $cache
 
 cd $cache
+
+export_env_dir() {
+  whitelist_regex=${2:-'LIBPOSTAL_S3_BUCKET'}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+      :
+    done
+  fi
+}
+
+indent() {
+  sed -u 's/^/       /'
+}
+
+export_env_dir
 
 echo "-----> Downloading libpostal"
 
@@ -28,11 +47,12 @@ mkdir -p $build/libpostal/data/compressed_data
 
 mv /app/libpostal/* $build/libpostal
 
-echo "-----> Downloading libpostal compressed data files and storing them internally"
+echo "Retrieving libpostal compressed data files and storing them internally" | indent
 
-curl -L --silent "https://s3.amazonaws.com/heroku-libpostal/libpostal.tar.gz" --output "$build/libpostal/data/compressed_data/libpostal.tar.gz"
+# Only retrieves a portion of Libpostal's data, the rest is loaded post slug compilation.
+curl -L --silent "${LIBPOSTAL_S3_BUCKET}/libpostal.tar.gz" --output "$build/libpostal/data/compressed_data/libpostal.tar.gz"
 
-echo "-----> Building libpostal symbolic links"
+echo "Building libpostal symbolic links" | indent
 
 mkdir -p $build/vendor/ruby-2.3.3/include
 mkdir -p $build/vendor/ruby-2.3.3/lib
