@@ -54,8 +54,8 @@ curl -L --silent "${LIBPOSTAL_S3_BUCKET}/libpostal.tar.gz" --output "$build/libp
 
 echo "Building libpostal symbolic links" | indent
 
-mkdir -p $build/vendor/ruby-2.3.3/include
-mkdir -p $build/vendor/ruby-2.3.3/lib
+mkdir -p $build/vendor/ruby-2.6.3/include
+mkdir -p $build/vendor/ruby-2.6.3/lib
 
-ln -vs $build/libpostal/include/* $build/vendor/ruby-2.3.3/include/
-ln -vs $build/libpostal/lib/* $build/vendor/ruby-2.3.3/lib/
+ln -vs $build/libpostal/include/* $build/vendor/ruby-2.6.3/include/
+ln -vs $build/libpostal/lib/* $build/vendor/ruby-2.6.3/lib/
